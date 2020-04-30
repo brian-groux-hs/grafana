@@ -103,6 +103,24 @@ export const PromSettings = (props: Props) => {
             />
           </div>
         </div>
+        <div className="gf-form-inline">
+          <div className="gf-form">
+            <FormField
+              label="Metrics lookup threshold"
+              labelWidth={13}
+              inputEl={
+                <Input
+                  className="width-6"
+                  value={options.jsonData.lookupMetricsThreshold}
+                  onChange={onChangeHandler('lookupMetricsThreshold', options, onOptionsChange)}
+                  spellCheck={false}
+                  placeholder="10000"
+                />
+              }
+              tooltip="The number of unique metric names after which dynamic label lookup is disabled."
+            />
+          </div>
+        </div>
       </div>
     </>
   );

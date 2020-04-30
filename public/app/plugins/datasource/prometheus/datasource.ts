@@ -38,6 +38,7 @@ import { getTimeSrv } from 'app/features/dashboard/services/TimeSrv';
 import TableModel from 'app/core/table_model';
 
 export const ANNOTATION_QUERY_STEP_DEFAULT = '60s';
+export const DEFAULT_LOOKUP_METRICS_THRESHOLD = 10000; // number of metrics defining an installation that's too big
 
 interface RequestOptions {
   method?: string;
@@ -86,6 +87,7 @@ export class PrometheusDatasource extends DataSourceApi<PromQuery, PromOptions> 
   lookupsDisabled: boolean;
   resultTransformer: ResultTransformer;
   customQueryParameters: any;
+  lookupMetricsThreshold: number;
 
   constructor(instanceSettings: DataSourceInstanceSettings<PromOptions>) {
     super(instanceSettings);
@@ -104,6 +106,7 @@ export class PrometheusDatasource extends DataSourceApi<PromQuery, PromOptions> 
     this.languageProvider = new PrometheusLanguageProvider(this);
     this.lookupsDisabled = instanceSettings.jsonData.disableMetricsLookup;
     this.customQueryParameters = new URLSearchParams(instanceSettings.jsonData.customQueryParameters);
+    this.lookupMetricsThreshold = instanceSettings.jsonData.lookupMetricsThreshold || DEFAULT_LOOKUP_METRICS_THRESHOLD;
   }
 
   init = () => {
@@ -735,6 +738,10 @@ export class PrometheusDatasource extends DataSourceApi<PromQuery, PromOptions> 
 
   getOriginalMetricName(labelData: { [key: string]: string }) {
     return this.resultTransformer.getOriginalMetricName(labelData);
+  }
+
+  getLookupMetricsThreshold() {
+    return this.lookupMetricsThreshold;
   }
 }
 

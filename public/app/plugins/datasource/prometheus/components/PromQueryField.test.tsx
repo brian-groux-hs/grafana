@@ -2,7 +2,8 @@ import { mount } from 'enzyme';
 // @ts-ignore
 import RCCascader from 'rc-cascader';
 import React from 'react';
-import PromQlLanguageProvider, { DEFAULT_LOOKUP_METRICS_THRESHOLD } from '../language_provider';
+import PromQlLanguageProvider from '../language_provider';
+import { DEFAULT_LOOKUP_METRICS_THRESHOLD } from '../datasource';
 import PromQueryField, { groupMetricsByPrefix, RECORDING_RULES_GROUP } from './PromQueryField';
 import { ButtonCascader } from '@grafana/ui';
 import { DataSourceInstanceSettings } from '@grafana/data';
