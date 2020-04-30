@@ -15,8 +15,6 @@ const DEFAULT_KEYS = ['job', 'instance'];
 const EMPTY_SELECTOR = '{}';
 const HISTORY_ITEM_COUNT = 5;
 const HISTORY_COUNT_CUTOFF = 1000 * 60 * 60 * 24; // 24h
-export const DEFAULT_LOOKUP_METRICS_THRESHOLD = 10000; // number of metrics defining an installation that's too big
-
 const wrapLabel = (label: string): CompletionItem => ({ label });
 
 const setFunctionKind = (suggestion: CompletionItem): CompletionItem => {
@@ -78,7 +76,7 @@ export default class PromQlLanguageProvider extends LanguageProvider {
     this.timeRange = { start: 0, end: 0 };
     this.metrics = [];
     // Disable lookups until we know the instance is small enough
-    this.lookupMetricsThreshold = DEFAULT_LOOKUP_METRICS_THRESHOLD;
+    this.lookupMetricsThreshold = this.datasource.getLookupMetricsThreshold();
     this.lookupsDisabled = true;
 
     Object.assign(this, initialValues);
