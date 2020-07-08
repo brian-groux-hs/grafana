@@ -54,6 +54,7 @@ exports[`LokiExploreQueryEditor should render component 1`] = `
   datasource={
     Object {
       "languageProvider": LokiLanguageProvider {
+        "addLabelValuesToOptions": [Function],
         "cleanText": [Function],
         "datasource": [Circular],
         "fetchSeriesLabels": [Function],
@@ -76,6 +77,7 @@ exports[`LokiExploreQueryEditor should render component 1`] = `
           },
           Symbol(length): 0,
         },
+        "logLabelFetchTs": 0,
         "request": [Function],
         "seriesCache": LRUCache {
           Symbol(max): 10,
