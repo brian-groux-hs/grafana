@@ -169,10 +169,10 @@ export default class PromQlLanguageProvider extends LanguageProvider {
     } else if (empty) {
       // Suggestions for empty query field
       return this.getEmptyCompletionItems(context);
-    } else if (prefixUnrecognized && noSuffix && !isNextOperand) {
+    } else if (prefixUnrecognized && noSuffix && !isNextOperand && prefix.length >= 2) {
       // Show term suggestions in a couple of scenarios
       return this.getBeginningCompletionItems(context);
-    } else if (prefixUnrecognized && safePrefix) {
+    } else if (prefixUnrecognized && safePrefix && prefix.length >= 2) {
       // Show term suggestions in a couple of scenarios
       return this.getTermCompletionItems();
     }
