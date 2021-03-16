@@ -24,7 +24,7 @@ const EMPTY_SELECTOR = '{}';
 const HISTORY_ITEM_COUNT = 5;
 const HISTORY_COUNT_CUTOFF = 1000 * 60 * 60 * 24; // 24h
 // Max number of items (metrics, labels, values) that we display as suggestions. Prevents from running out of memory.
-export const SUGGESTIONS_LIMIT = 10000;
+export const SUGGESTIONS_LIMIT = 100000;
 
 const wrapLabel = (label: string): CompletionItem => ({ label });
 
