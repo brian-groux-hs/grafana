@@ -28,12 +28,11 @@ import {
   textUtil,
   dateTime,
   AbsoluteTimeRange,
+  sortInAscendingOrder,
 } from '@grafana/data';
 import { getThemeColor } from 'app/core/utils/colors';
 
-import { sortInAscendingOrder, deduplicateLogRowsById } from 'app/core/utils/explore';
-import { getGraphSeriesModel } from 'app/plugins/panel/graph2/getGraphSeriesModel';
-import { decimalSIPrefix } from '@grafana/data/src/valueFormats/symbolFormatters';
+import { SIPrefix } from '@grafana/data/src/valueFormats/symbolFormatters';
 
 export const LogLevelColor = {
   [LogLevel.critical]: colors[7],
@@ -142,17 +141,18 @@ export function makeSeriesForLogs(sortedRows: LogRowModel[], bucketSize: number,
     const data = toDataFrame(series);
     const fieldCache = new FieldCache(data);
 
-    const timeField = fieldCache.getFirstFieldOfType(FieldType.time);
+    const timeField = fieldCache.getFirstFieldOfType(FieldType.time)!;
     timeField.display = getDisplayProcessor({
       field: timeField,
       timeZone,
     });
 
-    const valueField = fieldCache.getFirstFieldOfType(FieldType.number);
+    const valueField = fieldCache.getFirstFieldOfType(FieldType.number)!;
     valueField.config = {
       ...valueField.config,
       color: series.color,
     };
+
     valueField.name = series.alias;
     const fieldDisplayProcessor = getDisplayProcessor({ field: valueField, timeZone });
     valueField.display = (value: any) => ({ ...fieldDisplayProcessor(value), color: series.color });
@@ -186,7 +186,7 @@ export function makeSeriesForLogs(sortedRows: LogRowModel[], bucketSize: number,
 }
 
 function isLogsData(series: DataFrame) {
-  return series.fields.some(f => f.type === FieldType.time) && series.fields.some(f => f.type === FieldType.string);
+  return series.fields.some((f) => f.type === FieldType.time) && series.fields.some((f) => f.type === FieldType.string);
 }
 
 /**
@@ -201,35 +201,21 @@ export function dataFrameToLogsModel(
   timeZone: TimeZone,
   absoluteRange?: AbsoluteTimeRange
 ): LogsModel {
-  const { logSeries, metricSeries } = separateLogsAndMetrics(dataFrame);
+  const { logSeries } = separateLogsAndMetrics(dataFrame);
   const logsModel = logSeriesToLogsModel(logSeries);
 
+  // unification: Removed logic for using metrics data in LogsModel as with the unification changes this would result
+  // in the incorrect data being used. Instead logs series are always derived from logs.
   if (logsModel) {
-    if (metricSeries.length === 0) {
-      // Create histogram metrics from logs using the interval as bucket size for the line count
-      if (intervalMs && logsModel.rows.length > 0) {
-        const sortedRows = logsModel.rows.sort(sortInAscendingOrder);
-        const { visibleRange, bucketSize } = getSeriesProperties(sortedRows, intervalMs, absoluteRange);
-        logsModel.visibleRange = visibleRange;
-        logsModel.series = makeSeriesForLogs(sortedRows, bucketSize, timeZone);
-      } else {
-        logsModel.series = [];
-      }
+    // Create histogram metrics from logs using the interval as bucket size for the line count
+    if (intervalMs && logsModel.rows.length > 0) {
+      const sortedRows = logsModel.rows.sort(sortInAscendingOrder);
+      const { visibleRange, bucketSize } = getSeriesProperties(sortedRows, intervalMs, absoluteRange);
+      logsModel.visibleRange = visibleRange;
+      logsModel.series = makeSeriesForLogs(sortedRows, bucketSize, timeZone);
     } else {
-      // We got metrics in the dataFrame so process those
-      logsModel.series = getGraphSeriesModel(
-        metricSeries,
-        timeZone,
-        {},
-        { showBars: true, showLines: false, showPoints: false },
-        {
-          asTable: false,
-          isVisible: true,
-          placement: 'under',
-        }
-      );
+      logsModel.series = [];
     }
-
     return logsModel;
   }
 
@@ -283,7 +269,8 @@ function separateLogsAndMetrics(dataFrames: DataFrame[]) {
   const logSeries: DataFrame[] = [];
 
   for (const dataFrame of dataFrames) {
-    if (isLogsData(dataFrame)) {
+    // We want to show meta stats even if no result was returned. That's why we are pushing also data frames with no fields.
+    if (isLogsData(dataFrame) || !dataFrame.fields.length) {
       logSeries.push(dataFrame);
       continue;
     }
@@ -317,23 +304,33 @@ export function logSeriesToLogsModel(logSeries: DataFrame[]): LogsModel | undefi
   const allLabels: Labels[] = [];
 
   // Find the fields we care about and collect all labels
-  const allSeries: LogFields[] = logSeries.map(series => {
-    const fieldCache = new FieldCache(series);
-    const stringField = fieldCache.getFirstFieldOfType(FieldType.string);
-    if (stringField?.labels) {
-      allLabels.push(stringField.labels);
-    }
-    return {
-      series,
-      timeField: fieldCache.getFirstFieldOfType(FieldType.time),
-      timeNanosecondField: fieldCache.hasFieldWithNameAndType('tsNs', FieldType.time)
-        ? fieldCache.getFieldByName('tsNs')
-        : undefined,
-      stringField,
-      logLevelField: fieldCache.getFieldByName('level'),
-      idField: getIdField(fieldCache),
-    } as LogFields;
-  });
+  let allSeries: LogFields[] = [];
+
+  // We are sometimes passing data frames with no fields because we want to calculate correct meta stats.
+  // Therefore we need to filter out series with no fields. These series are used only for meta stats calculation.
+  const seriesWithFields = logSeries.filter((series) => series.fields.length);
+
+  if (seriesWithFields.length) {
+    allSeries = seriesWithFields.map((series) => {
+      const fieldCache = new FieldCache(series);
+      const stringField = fieldCache.getFirstFieldOfType(FieldType.string);
+
+      if (stringField?.labels) {
+        allLabels.push(stringField.labels);
+      }
+
+      return {
+        series,
+        timeField: fieldCache.getFirstFieldOfType(FieldType.time),
+        timeNanosecondField: fieldCache.hasFieldWithNameAndType('tsNs', FieldType.time)
+          ? fieldCache.getFieldByName('tsNs')
+          : undefined,
+        stringField,
+        logLevelField: fieldCache.getFieldByName('level'),
+        idField: getIdField(fieldCache),
+      } as LogFields;
+    });
+  }
 
   const commonLabels = allLabels.length > 0 ? findCommonLabels(allLabels) : {};
 
@@ -364,6 +361,9 @@ export function logSeriesToLogsModel(logSeries: DataFrame[]): LogsModel | undefi
       const message: string = typeof messageValue === 'string' ? messageValue : JSON.stringify(messageValue);
 
       const hasAnsi = textUtil.hasAnsiCodes(message);
+
+      const hasUnescapedContent = !!message.match(/\\n|\\t|\\r/);
+
       const searchWords = series.meta && series.meta.searchWords ? series.meta.searchWords : [];
 
       let logLevel = LogLevel.unknown;
@@ -386,6 +386,7 @@ export function logSeriesToLogsModel(logSeries: DataFrame[]): LogsModel | undefi
         timeUtc: dateTimeFormat(ts, { timeZone: 'utc' }),
         uniqueLabels,
         hasAnsi,
+        hasUnescapedContent,
         searchWords,
         entry: hasAnsi ? ansicolor.strip(message) : message,
         raw: message,
@@ -394,8 +395,6 @@ export function logSeriesToLogsModel(logSeries: DataFrame[]): LogsModel | undefi
       });
     }
   }
-
-  const deduplicatedLogRows = deduplicateLogRowsById(rows);
 
   // Meta data to display in status
   const meta: LogsMetaItem[] = [];
@@ -407,7 +406,7 @@ export function logSeriesToLogsModel(logSeries: DataFrame[]): LogsModel | undefi
     });
   }
 
-  const limits = logSeries.filter(series => series.meta && series.meta.limit);
+  const limits = logSeries.filter((series) => series.meta && series.meta.limit);
   const limitValue = Object.values(
     limits.reduce((acc: any, elem: any) => {
       acc[elem.refId] = elem.meta.limit;
@@ -418,7 +417,7 @@ export function logSeriesToLogsModel(logSeries: DataFrame[]): LogsModel | undefi
   if (limits.length > 0) {
     meta.push({
       label: 'Limit',
-      value: `${limitValue} (${deduplicatedLogRows.length} returned)`,
+      value: `${limitValue} (${rows.length} returned)`,
       kind: LogsMetaKind.String,
     });
   }
@@ -426,22 +425,36 @@ export function logSeriesToLogsModel(logSeries: DataFrame[]): LogsModel | undefi
   // Hack to print loki stats in Explore. Should be using proper stats display via drawer in Explore (rework in 7.1)
   let totalBytes = 0;
   const queriesVisited: { [refId: string]: boolean } = {};
+  // To add just 1 error message
+  let errorMetaAdded = false;
+
   for (const series of logSeries) {
     const totalBytesKey = series.meta?.custom?.lokiQueryStatKey;
-    // Stats are per query, keeping track by refId
-    const { refId } = series;
+    const { refId } = series; // Stats are per query, keeping track by refId
+
+    if (!errorMetaAdded && series.meta?.custom?.error) {
+      meta.push({
+        label: '',
+        value: series.meta?.custom.error,
+        kind: LogsMetaKind.Error,
+      });
+      errorMetaAdded = true;
+    }
+
     if (refId && !queriesVisited[refId]) {
-      if (totalBytesKey && series.meta.stats) {
-        const byteStat = series.meta.stats.find(stat => stat.displayName === totalBytesKey);
+      if (totalBytesKey && series.meta?.stats) {
+        const byteStat = series.meta.stats.find((stat) => stat.displayName === totalBytesKey);
         if (byteStat) {
           totalBytes += byteStat.value;
         }
       }
+
       queriesVisited[refId] = true;
     }
   }
+
   if (totalBytes > 0) {
-    const { text, suffix } = decimalSIPrefix('B')(totalBytes);
+    const { text, suffix } = SIPrefix('B')(totalBytes);
     meta.push({
       label: 'Total bytes processed',
       value: `${text} ${suffix}`,
@@ -452,7 +465,7 @@ export function logSeriesToLogsModel(logSeries: DataFrame[]): LogsModel | undefi
   return {
     hasUniqueLabels,
     meta,
-    rows: deduplicatedLogRows,
+    rows,
   };
 }
 

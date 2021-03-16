@@ -4,6 +4,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/grafana/grafana/pkg/services/validations"
+
 	"github.com/grafana/grafana/pkg/bus"
 	"github.com/grafana/grafana/pkg/components/simplejson"
 	"github.com/grafana/grafana/pkg/models"
@@ -68,7 +70,7 @@ func TestOpsGenieNotifier(t *testing.T) {
 					Settings: settingsJSON,
 				}
 
-				notifier, notifierErr := NewOpsGenieNotifier(model) //unhandled error
+				notifier, notifierErr := NewOpsGenieNotifier(model) // unhandled error
 
 				opsgenieNotifier := notifier.(*OpsGenieNotifier)
 
@@ -78,7 +80,7 @@ func TestOpsGenieNotifier(t *testing.T) {
 					Message:       "someMessage",
 					State:         models.AlertStateAlerting,
 					AlertRuleTags: tagPairs,
-				})
+				}, &validations.OSSPluginRequestValidator{})
 				evalContext.IsTestRun = true
 
 				receivedTags := make([]string, 0)

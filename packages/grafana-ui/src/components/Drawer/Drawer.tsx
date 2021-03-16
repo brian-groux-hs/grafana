@@ -4,7 +4,7 @@ import RcDrawer from 'rc-drawer';
 import { css } from 'emotion';
 import { selectors } from '@grafana/e2e-selectors';
 
-import CustomScrollbar from '../CustomScrollbar/CustomScrollbar';
+import { CustomScrollbar } from '../CustomScrollbar/CustomScrollbar';
 import { IconButton } from '../IconButton/IconButton';
 import { stylesFactory, useTheme } from '../../themes';
 
@@ -26,6 +26,7 @@ export interface Props {
   /** Set to true if the component rendered within in drawer content has its own scroll */
   scrollableContent?: boolean;
 
+  /** Callback for closing the drawer */
   onClose: () => void;
 }
 

@@ -2,8 +2,16 @@ import _ from 'lodash';
 import LogAnalyticsQuerystringBuilder from '../log_analytics/querystring_builder';
 import ResponseParser from './response_parser';
 import { AzureMonitorQuery, AzureDataSourceJsonData, AzureLogsVariable, AzureQueryType } from '../types';
-import { DataQueryResponse, ScopedVars, DataSourceInstanceSettings, MetricFindValue } from '@grafana/data';
+import {
+  DataQueryRequest,
+  DataQueryResponse,
+  ScopedVars,
+  DataSourceInstanceSettings,
+  MetricFindValue,
+} from '@grafana/data';
 import { getBackendSrv, getTemplateSrv, DataSourceWithBackend } from '@grafana/runtime';
+import { Observable, from } from 'rxjs';
+import { mergeMap } from 'rxjs/operators';
 
 export default class AzureLogAnalyticsDatasource extends DataSourceWithBackend<
   AzureMonitorQuery,
@@ -12,9 +20,16 @@ export default class AzureLogAnalyticsDatasource extends DataSourceWithBackend<
   url: string;
   baseUrl: string;
   applicationId: string;
+
+  /**
+   * @deprecated
+   * TODO: Which one of these values should be used? Was there a migration?
+   * */
+  logAnalyticsSubscriptionId: string;
+  subscriptionId: string;
+
   azureMonitorUrl: string;
   defaultOrFirstWorkspace: string;
-  subscriptionId: string;
   cache: Map<string, any>;
 
   constructor(private instanceSettings: DataSourceInstanceSettings<AzureDataSourceJsonData>) {
@@ -129,6 +144,17 @@ export default class AzureLogAnalyticsDatasource extends DataSourceWithBackend<
     };
   }
 
+  /**
+   * Augment the results with links back to the azure console
+   */
+  query(request: DataQueryRequest<AzureMonitorQuery>): Observable<DataQueryResponse> {
+    return super.query(request).pipe(
+      mergeMap((res: DataQueryResponse) => {
+        return from(this.processResponse(res));
+      })
+    );
+  }
+
   async processResponse(res: DataQueryResponse): Promise<DataQueryResponse> {
     if (res.data) {
       for (const df of res.data) {
@@ -217,10 +243,10 @@ export default class AzureLogAnalyticsDatasource extends DataSourceWithBackend<
       const promises = this.doQueries(queries);
 
       return Promise.all(promises)
-        .then(results => {
+        .then((results) => {
           return new ResponseParser(results).parseToVariables();
         })
-        .catch(err => {
+        .catch((err) => {
           if (
             err.error &&
             err.error.data &&
@@ -266,7 +292,7 @@ export default class AzureLogAnalyticsDatasource extends DataSourceWithBackend<
       return value;
     }
 
-    const quotedValues = _.map(value, val => {
+    const quotedValues = _.map(value, (val) => {
       if (typeof value === 'number') {
         return value;
       }
@@ -298,14 +324,14 @@ export default class AzureLogAnalyticsDatasource extends DataSourceWithBackend<
 
     const promises = this.doQueries(queries);
 
-    return Promise.all(promises).then(results => {
+    return Promise.all(promises).then((results) => {
       const annotations = new ResponseParser(results).transformToAnnotations(options);
       return annotations;
     });
   }
 
   doQueries(queries: any[]) {
-    return _.map(queries, query => {
+    return _.map(queries, (query) => {
       return this.doRequest(query.url)
         .then((result: any) => {
           return {

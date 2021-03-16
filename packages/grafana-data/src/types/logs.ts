@@ -27,10 +27,17 @@ export enum LogLevel {
   unknown = 'unknown',
 }
 
+// Used for meta information such as common labels or returned log rows in logs view in Explore
 export enum LogsMetaKind {
   Number,
   String,
   LabelsMap,
+  Error,
+}
+
+export enum LogsSortOrder {
+  Descending = 'Descending',
+  Ascending = 'Ascending',
 }
 
 export interface LogsMetaItem {
@@ -55,6 +62,7 @@ export interface LogRowModel {
   // Actual log line
   entry: string;
   hasAnsi: boolean;
+  hasUnescapedContent: boolean;
   labels: Labels;
   logLevel: LogLevel;
   raw: string;

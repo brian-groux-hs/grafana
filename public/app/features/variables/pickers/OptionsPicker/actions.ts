@@ -26,7 +26,7 @@ import { getDataSourceSrv } from '@grafana/runtime';
 import { getTimeSrv } from 'app/features/dashboard/services/TimeSrv';
 import { changeVariableProp, setCurrentVariableValue } from '../../state/sharedReducer';
 import { toVariablePayload } from '../../state/types';
-import { containsSearchFilter } from '../../utils';
+import { containsSearchFilter, getCurrentText } from '../../utils';
 
 export const navigateOptions = (key: NavigationKey, clearOthers: boolean): ThunkResult<void> => {
   return async (dispatch, getState) => {
@@ -72,7 +72,13 @@ export const filterOrSearchOptions = (searchQuery = ''): ThunkResult<void> => {
   };
 };
 
-export const commitChangesToVariable = (): ThunkResult<void> => {
+const setVariable = async (updated: VariableWithMultiSupport) => {
+  const adapter = variableAdapters.get(updated.type);
+  await adapter.setValue(updated, updated.current, true);
+  return;
+};
+
+export const commitChangesToVariable = (callback?: (updated: any) => void): ThunkResult<void> => {
   return async (dispatch, getState) => {
     const picker = getState().templating.optionsPicker;
     const existing = getVariable<VariableWithMultiSupport>(picker.id, getState());
@@ -82,14 +88,17 @@ export const commitChangesToVariable = (): ThunkResult<void> => {
     dispatch(setCurrentVariableValue(toVariablePayload(existing, currentPayload)));
     dispatch(changeVariableProp(toVariablePayload(existing, searchQueryPayload)));
     const updated = getVariable<VariableWithMultiSupport>(picker.id, getState());
+    dispatch(hideOptions());
 
-    if (existing.current.text === updated.current.text) {
-      return dispatch(hideOptions());
+    if (getCurrentText(existing) === getCurrentText(updated)) {
+      return;
     }
 
-    const adapter = variableAdapters.get(updated.type);
-    await adapter.setValue(updated, updated.current, true);
-    return dispatch(hideOptions());
+    if (callback) {
+      return callback(updated);
+    }
+
+    return setVariable(updated);
   };
 };
 
@@ -118,7 +127,7 @@ const fetchTagValues = (tagText: string): ThunkResult<Promise<string[]>> => {
     const variable = getVariable<QueryVariableModel>(picker.id, getState());
 
     const datasource = await getDataSourceSrv().get(variable.datasource ?? '');
-    const query = variable.tagValuesQuery.replace('$tag', tagText);
+    const query = variable.tagValuesQuery.replace(/\$tag/g, tagText);
     const options = { range: getTimeRange(variable), variable };
 
     if (!datasource.metricFindQuery) {
@@ -130,12 +139,12 @@ const fetchTagValues = (tagText: string): ThunkResult<Promise<string[]>> => {
     if (!Array.isArray(results)) {
       return [];
     }
-    return results.map(value => value.text);
+    return results.map((value) => value.text);
   };
 };
 
 const getTimeRange = (variable: QueryVariableModel) => {
-  if (variable.refresh === VariableRefresh.onTimeRangeChanged) {
+  if (variable.refresh === VariableRefresh.onTimeRangeChanged || variable.refresh === VariableRefresh.onDashboardLoad) {
     return getTimeSrv().timeRange();
   }
   return undefined;
@@ -158,7 +167,7 @@ const searchForOptions = async (dispatch: ThunkDispatch, getState: () => StoreSt
 
 const searchForOptionsWithDebounce = debounce(searchForOptions, 500);
 
-function mapToCurrent(picker: OptionsPickerState): VariableOption | undefined {
+export function mapToCurrent(picker: OptionsPickerState): VariableOption | undefined {
   const { options, selectedValues, queryValue: searchQuery, multi } = picker;
 
   if (options.length === 0 && searchQuery && searchQuery.length > 0) {
@@ -166,7 +175,7 @@ function mapToCurrent(picker: OptionsPickerState): VariableOption | undefined {
   }
 
   if (!multi) {
-    return selectedValues.find(o => o.selected);
+    return selectedValues.find((o) => o.selected);
   }
 
   const texts: string[] = [];
@@ -183,8 +192,8 @@ function mapToCurrent(picker: OptionsPickerState): VariableOption | undefined {
 
   return {
     value: values,
-    text: texts.join(' + '),
-    tags: picker.tags.filter(t => t.selected),
+    text: texts,
+    tags: picker.tags.filter((t) => t.selected),
     selected: true,
   };
 }

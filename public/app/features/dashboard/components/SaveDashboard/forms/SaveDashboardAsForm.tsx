@@ -65,6 +65,10 @@ export const SaveDashboardAsForm: React.FC<SaveDashboardFormProps & { isNew?: bo
     <Form
       defaultValues={defaultValues}
       onSubmit={async (data: SaveDashboardAsFormDTO) => {
+        if (!onSubmit) {
+          return;
+        }
+
         const clone = getSaveAsDashboardClone(dashboard);
         clone.title = data.title;
         if (!data.copyTags) {
@@ -105,7 +109,6 @@ export const SaveDashboardAsForm: React.FC<SaveDashboardFormProps & { isNew?: bo
               initialFolderId={dashboard.meta.folderId}
               initialTitle={dashboard.meta.folderTitle}
               enableCreateNew
-              useNewForms
             />
           </Field>
           <Field label="Copy tags">

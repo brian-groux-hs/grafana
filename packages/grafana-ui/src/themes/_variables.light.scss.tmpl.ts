@@ -234,9 +234,6 @@ $horizontalComponentOffset: 180px;
 $navbarHeight: 52px;
 $navbarBorder: 1px solid $gray-5;
 
-$navbarButtonBackground: $panel-bg;
-$navbar-button-border: $gray-4;
-
 // Sidemenu
 // -------------------------
 $side-menu-bg: ${theme.palette.gray15};
@@ -293,6 +290,9 @@ $popover-error-bg: $btn-danger-bg;
 $popover-help-bg: $tooltipBackground;
 $popover-help-color: $tooltipColor;
 
+$popover-code-bg: ${theme.colors.bg1};
+$popover-code-boxshadow: 0 0 5px $gray60;
+
 // images
 $checkboxImageUrl: '../img/checkbox_white.png';
 
@@ -319,14 +319,14 @@ $json-explorer-url-color: $blue-base;
 
 // Changelog and diff
 // -------------------------
-$diff-label-bg: $gray-7;
+$diff-label-bg: ${theme.colors.bg3};
 $diff-label-fg: $gray-2;
 
 $diff-arrow-color: $dark-2;
-$diff-group-bg: $gray-6;
+$diff-group-bg: ${theme.colors.bg2};
 
-$diff-json-bg: $gray-6;
-$diff-json-fg: $gray-1;
+$diff-json-bg: ${theme.colors.bg2};
+$diff-json-fg: ${theme.colors.text};
 
 $diff-json-added: $blue-shade;
 $diff-json-deleted: $red-shade;

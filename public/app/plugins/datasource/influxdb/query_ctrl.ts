@@ -4,7 +4,7 @@ import { InfluxQueryBuilder } from './query_builder';
 import InfluxQueryModel from './influx_query_model';
 import queryPart from './query_part';
 import { QueryCtrl } from 'app/plugins/sdk';
-import { TemplateSrv } from 'app/features/templating/template_srv';
+import { TemplateSrv } from '@grafana/runtime';
 import { InfluxQuery } from './types';
 import InfluxDatasource from './datasource';
 
@@ -38,6 +38,7 @@ export class InfluxQueryCtrl extends QueryCtrl {
     this.resultFormats = [
       { text: 'Time series', value: 'time_series' },
       { text: 'Table', value: 'table' },
+      { text: 'Logs', value: 'logs' },
     ];
 
     this.policySegment = uiSegmentSrv.newSegment(this.target.policy);
@@ -80,6 +81,13 @@ export class InfluxQueryCtrl extends QueryCtrl {
    */
   onChange = (target: InfluxQuery) => {
     this.target.query = target.query;
+  };
+
+  // only called from raw-mode influxql-editor
+  onRawInfluxQLChange = (target: InfluxQuery) => {
+    this.target.query = target.query;
+    this.target.resultFormat = target.resultFormat;
+    this.target.alias = target.alias;
   };
 
   onRunQuery = () => {
@@ -255,14 +263,14 @@ export class InfluxQueryCtrl extends QueryCtrl {
 
   // Only valid for InfluxQL queries
   toggleEditorMode() {
-    if (this.datasource.is2x) {
+    if (this.datasource.isFlux) {
       return; // nothing
     }
 
     try {
       this.target.query = this.queryModel.render(false);
     } catch (err) {
-      console.log('query render error');
+      console.error('query render error');
     }
     this.target.rawQuery = !this.target.rawQuery;
   }
@@ -282,7 +290,7 @@ export class InfluxQueryCtrl extends QueryCtrl {
 
   transformToSegments(addTemplateVars: any) {
     return (results: any) => {
-      const segments = _.map(results, segment => {
+      const segments = _.map(results, (segment) => {
         return this.uiSegmentSrv.newSegment({
           value: segment.text,
           expandable: segment.expandable,
@@ -418,9 +426,5 @@ export class InfluxQueryCtrl extends QueryCtrl {
       return '=';
     }
     return null;
-  }
-
-  getCollapsedText() {
-    return this.queryModel.render(false);
   }
 }

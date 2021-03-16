@@ -16,13 +16,13 @@ export interface Props {
   templateVariableOptions: Array<SelectableValue<string>>;
 }
 
-export const Aggregations: FC<Props> = props => {
+export const Aggregations: FC<Props> = (props) => {
   const [displayAdvancedOptions, setDisplayAdvancedOptions] = useState(false);
   const aggOptions = useAggregationOptionsByMetric(props);
   const selected = useSelectedFromOptions(aggOptions, props);
 
   return (
-    <>
+    <div data-testid="aggregations">
       <div className="gf-form-inline">
         <label className="gf-form-label query-keyword width-9">Aggregation</label>
         <Segment
@@ -40,7 +40,7 @@ export const Aggregations: FC<Props> = props => {
             },
           ]}
           placeholder="Select Reducer"
-        ></Segment>
+        />
         <div className="gf-form gf-form--grow">
           <label className="gf-form-label gf-form-label--grow">
             <a onClick={() => setDisplayAdvancedOptions(!displayAdvancedOptions)}>
@@ -52,7 +52,7 @@ export const Aggregations: FC<Props> = props => {
         </div>
       </div>
       {props.children(displayAdvancedOptions)}
-    </>
+    </div>
   );
 };
 
@@ -65,7 +65,7 @@ const useAggregationOptionsByMetric = ({ metricDescriptor }: Props): Array<Selec
     return getAggregationOptionsByMetric(
       metricDescriptor.valueType as ValueTypes,
       metricDescriptor.metricKind as MetricKind
-    ).map(a => ({
+    ).map((a) => ({
       ...a,
       label: a.text,
     }));
@@ -75,6 +75,6 @@ const useAggregationOptionsByMetric = ({ metricDescriptor }: Props): Array<Selec
 const useSelectedFromOptions = (aggOptions: Array<SelectableValue<string>>, props: Props) => {
   return useMemo(() => {
     const allOptions = [...aggOptions, ...props.templateVariableOptions];
-    return allOptions.find(s => s.value === props.crossSeriesReducer);
+    return allOptions.find((s) => s.value === props.crossSeriesReducer);
   }, [aggOptions, props.crossSeriesReducer, props.templateVariableOptions]);
 };

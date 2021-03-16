@@ -5,8 +5,7 @@ import (
 	"net/http"
 
 	"github.com/grafana/grafana/pkg/components/simplejson"
-
-	"github.com/grafana/grafana/pkg/tsdb"
+	"github.com/grafana/grafana/pkg/tsdb/interval"
 )
 
 type response struct {
@@ -33,7 +32,7 @@ type SearchDebugInfo struct {
 // SearchRequest represents a search request
 type SearchRequest struct {
 	Index       string
-	Interval    tsdb.Interval
+	Interval    interval.Interval
 	Size        int
 	Sort        map[string]interface{}
 	Query       *Query
@@ -95,11 +94,6 @@ type Query struct {
 // BoolQuery represents a bool query
 type BoolQuery struct {
 	Filters []Filter
-}
-
-// NewBoolQuery create a new bool query
-func NewBoolQuery() *BoolQuery {
-	return &BoolQuery{Filters: make([]Filter, 0)}
 }
 
 // MarshalJSON returns the JSON encoding of the boolean query.

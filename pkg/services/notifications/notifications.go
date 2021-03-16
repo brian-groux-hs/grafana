@@ -56,14 +56,14 @@ func (ns *NotificationService) Init() error {
 		"Subject": subjectTemplateFunc,
 	})
 
-	templatePattern := filepath.Join(setting.StaticRootPath, ns.Cfg.Smtp.TemplatesPattern)
+	templatePattern := filepath.Join(ns.Cfg.StaticRootPath, ns.Cfg.Smtp.TemplatesPattern)
 	_, err := mailTemplates.ParseGlob(templatePattern)
 	if err != nil {
 		return err
 	}
 
 	if !util.IsEmail(ns.Cfg.Smtp.FromAddress) {
-		return errors.New("Invalid email address for SMTP from_address config")
+		return errors.New("invalid email address for SMTP from_address config")
 	}
 
 	if setting.EmailCodeValidMinutes == 0 {

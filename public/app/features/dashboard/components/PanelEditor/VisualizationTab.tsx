@@ -6,7 +6,7 @@ import { changePanelPlugin } from '../../state/actions';
 import { StoreState } from 'app/types';
 import { PanelModel } from '../../state/PanelModel';
 import { connect, MapStateToProps, MapDispatchToProps } from 'react-redux';
-import { VizTypePicker, getAllPanelPluginMeta, filterPluginList } from '../../panel_editor/VizTypePicker';
+import { VizTypePicker, getAllPanelPluginMeta, filterPluginList } from '../VizTypePicker/VizTypePicker';
 import { Field } from '@grafana/ui/src/components/Forms/Field';
 
 interface OwnProps {
@@ -15,7 +15,7 @@ interface OwnProps {
 }
 
 interface ConnectedProps {
-  plugin?: PanelPlugin;
+  plugin: PanelPlugin;
 }
 
 interface DispatchProps {
@@ -30,9 +30,6 @@ export const VisualizationTabUnconnected = React.forwardRef<HTMLInputElement, Pr
     const theme = useTheme();
     const styles = getStyles(theme);
 
-    if (!plugin) {
-      return null;
-    }
     const onPluginTypeChange = (meta: PanelPluginMeta) => {
       if (meta.id === plugin.meta.id) {
         onToggleOptionGroup(false);
@@ -63,12 +60,16 @@ export const VisualizationTabUnconnected = React.forwardRef<HTMLInputElement, Pr
         </span>
       ) : null;
 
+    if (!plugin) {
+      return null;
+    }
+
     return (
       <div className={styles.wrapper}>
         <Field>
           <Input
             value={searchQuery}
-            onChange={e => setSearchQuery(e.currentTarget.value)}
+            onChange={(e) => setSearchQuery(e.currentTarget.value)}
             onKeyPress={onKeyPress}
             prefix={<Icon name="filter" className={styles.icon} />}
             suffix={suffix}
@@ -87,6 +88,9 @@ export const VisualizationTabUnconnected = React.forwardRef<HTMLInputElement, Pr
     );
   }
 );
+
+VisualizationTabUnconnected.displayName = 'VisualizationTabUnconnected';
+
 const getStyles = stylesFactory((theme: GrafanaTheme) => {
   return {
     icon: css`

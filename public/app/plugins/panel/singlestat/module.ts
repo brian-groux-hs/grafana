@@ -3,7 +3,6 @@ import { auto } from 'angular';
 import $ from 'jquery';
 import 'vendor/flot/jquery.flot';
 import 'vendor/flot/jquery.flot.gauge';
-import 'app/features/panel/panellinks/link_srv';
 
 import {
   DataFrame,
@@ -19,11 +18,11 @@ import {
   LegacyResponseData,
   getFlotPairs,
   getDisplayProcessor,
-  getColorFromHexRgbOrName,
   PanelEvents,
   formattedValueToString,
   locationUtil,
   getFieldDisplayName,
+  getColorForTheme,
 } from '@grafana/data';
 
 import { convertOldAngularValueMapping } from '@grafana/ui';
@@ -31,7 +30,7 @@ import { convertOldAngularValueMapping } from '@grafana/ui';
 import config from 'app/core/config';
 import { MetricsPanelCtrl } from 'app/plugins/sdk';
 import { LinkSrv } from 'app/features/panel/panellinks/link_srv';
-import { getProcessedDataFrames } from 'app/features/dashboard/state/runRequest';
+import { getProcessedDataFrames } from 'app/features/query/state/runRequest';
 
 const BASE_FONT_SIZE = 38;
 
@@ -52,10 +51,10 @@ class SingleStatCtrl extends MetricsPanelCtrl {
 
   data: Partial<ShowData> = {};
 
-  fontSizes: any[];
+  fontSizes: any[] = [];
   fieldNames: string[] = [];
 
-  invalidGaugeRange: boolean;
+  invalidGaugeRange = false;
   panel: any;
   events: any;
   valueNameOptions: any[] = [
@@ -68,6 +67,7 @@ class SingleStatCtrl extends MetricsPanelCtrl {
     { value: 'first', text: 'First' },
     { value: 'delta', text: 'Delta' },
     { value: 'diff', text: 'Difference' },
+    { value: 'diffperc', text: 'Difference percent' },
     { value: 'range', text: 'Range' },
     { value: 'last_time', text: 'Time of last point' },
   ];
@@ -542,7 +542,7 @@ class SingleStatCtrl extends MetricsPanelCtrl {
             show: true,
             fill: 1,
             lineWidth: 1,
-            fillColor: getColorFromHexRgbOrName(panel.sparkline.fillColor, config.theme.type),
+            fillColor: getColorForTheme(panel.sparkline.fillColor, config.theme),
             zero: false,
           },
         },
@@ -564,7 +564,7 @@ class SingleStatCtrl extends MetricsPanelCtrl {
 
       const plotSeries = {
         data: data.sparkline,
-        color: getColorFromHexRgbOrName(panel.sparkline.lineColor, config.theme.type),
+        color: getColorForTheme(panel.sparkline.lineColor, config.theme),
       };
 
       $.plot(plotCanvas, [plotSeries], options);
@@ -585,7 +585,7 @@ class SingleStatCtrl extends MetricsPanelCtrl {
 
       // Map panel colors to hex or rgb/a values
       if (panel.colors) {
-        data.colorMap = panel.colors.map((color: string) => getColorFromHexRgbOrName(color, config.theme.type));
+        data.colorMap = panel.colors.map((color: string) => getColorForTheme(color, config.theme));
       }
 
       const body = panel.gauge.show ? '' : getBigValueHtml();
@@ -640,7 +640,7 @@ class SingleStatCtrl extends MetricsPanelCtrl {
         });
       });
 
-      elem.click(evt => {
+      elem.click((evt) => {
         if (!linkInfo) {
           return;
         }
@@ -665,7 +665,7 @@ class SingleStatCtrl extends MetricsPanelCtrl {
         drilldownTooltip.detach();
       });
 
-      elem.mousemove(e => {
+      elem.mousemove((e) => {
         if (!linkInfo) {
           return;
         }

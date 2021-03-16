@@ -1,15 +1,11 @@
 import React from 'react';
-import { NamedColorsPalette } from './NamedColorsPalette';
-import { getColorName, getColorDefinitionByName } from '@grafana/data';
-import { select } from '@storybook/addon-knobs';
+import { NamedColorsPalette, NamedColorsPaletteProps } from './NamedColorsPalette';
+import { Story } from '@storybook/react';
 import { withCenteredStory } from '../../utils/storybook/withCenteredStory';
 import { renderComponentWithTheme } from '../../utils/storybook/withTheme';
+import { NOOP_CONTROL } from '../../utils/storybook/noopControl';
 import { UseState } from '../../utils/storybook/UseState';
 import mdx from './ColorPicker.mdx';
-
-const BasicGreen = getColorDefinitionByName('green');
-const BasicRed = getColorDefinitionByName('red');
-const LightBlue = getColorDefinitionByName('light-blue');
 
 export default {
   title: 'Pickers and Editors/ColorPicker/Palettes/NamedColorsPalette',
@@ -19,20 +15,22 @@ export default {
     docs: {
       page: mdx,
     },
+    knobs: {
+      disable: true,
+    },
+  },
+  argTypes: {
+    selectedColor: { control: { type: 'select', options: ['green', 'red', 'light-blue', 'yellow'] } },
+    theme: NOOP_CONTROL,
+    color: NOOP_CONTROL,
   },
 };
 
-export const namedColors = () => {
-  const selectedColor = select(
-    'Selected color',
-    {
-      Green: 'green',
-      Red: 'red',
-      'Light blue': 'light-blue',
-    },
-    'red'
-  );
+interface StoryProps extends Partial<NamedColorsPaletteProps> {
+  selectedColor: string;
+}
 
+export const NamedColors: Story<StoryProps> = ({ selectedColor }) => {
   return (
     <UseState initialState={selectedColor}>
       {(selectedColor, updateSelectedColor) => {
@@ -44,22 +42,6 @@ export const namedColors = () => {
     </UseState>
   );
 };
-
-export const hexValues = () => {
-  let hexVals: any = {};
-  hexVals[BasicGreen.variants.dark] = BasicGreen.variants.dark;
-  hexVals[BasicRed.variants.dark] = BasicRed.variants.dark;
-  hexVals[LightBlue.variants.dark] = LightBlue.variants.dark;
-
-  const selectedColor = select('Selected color', hexVals, 'red');
-  return (
-    <UseState initialState={selectedColor}>
-      {(selectedColor, updateSelectedColor) => {
-        return renderComponentWithTheme(NamedColorsPalette, {
-          color: getColorName(selectedColor),
-          onChange: updateSelectedColor,
-        });
-      }}
-    </UseState>
-  );
+NamedColors.args = {
+  selectedColor: 'red',
 };

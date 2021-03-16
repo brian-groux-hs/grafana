@@ -1,26 +1,17 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { DataSourceVariableModel, VariableHide, VariableOption, VariableRefresh } from '../types';
-import {
-  ALL_VARIABLE_TEXT,
-  ALL_VARIABLE_VALUE,
-  getInstanceState,
-  NEW_VARIABLE_ID,
-  VariablePayload,
-} from '../state/types';
+import { DataSourceInstanceSettings } from '@grafana/data';
+
+import { DataSourceVariableModel, initialVariableModelState, VariableOption, VariableRefresh } from '../types';
+import { ALL_VARIABLE_TEXT, ALL_VARIABLE_VALUE, getInstanceState, VariablePayload } from '../state/types';
 import { initialVariablesState, VariablesState } from '../state/variablesReducer';
-import { DataSourceSelectItem } from '@grafana/data';
 
 export interface DataSourceVariableEditorState {
   dataSourceTypes: Array<{ text: string; value: string }>;
 }
 
 export const initialDataSourceVariableModelState: DataSourceVariableModel = {
-  id: NEW_VARIABLE_ID,
-  global: false,
+  ...initialVariableModelState,
   type: 'datasource',
-  name: '',
-  hide: VariableHide.dontHide,
-  label: '',
   current: {} as VariableOption,
   regex: '',
   options: [],
@@ -28,9 +19,6 @@ export const initialDataSourceVariableModelState: DataSourceVariableModel = {
   multi: false,
   includeAll: false,
   refresh: VariableRefresh.onDashboardLoad,
-  skipUrlSync: false,
-  index: -1,
-  initLock: null,
 };
 
 export const dataSourceVariableSlice = createSlice({
@@ -39,7 +27,7 @@ export const dataSourceVariableSlice = createSlice({
   reducers: {
     createDataSourceOptions: (
       state: VariablesState,
-      action: PayloadAction<VariablePayload<{ sources: DataSourceSelectItem[]; regex: RegExp | undefined }>>
+      action: PayloadAction<VariablePayload<{ sources: DataSourceInstanceSettings[]; regex: RegExp | undefined }>>
     ) => {
       const { sources, regex } = action.payload.data;
       const options: VariableOption[] = [];
@@ -56,6 +44,10 @@ export const dataSourceVariableSlice = createSlice({
         }
 
         options.push({ text: source.name, value: source.name, selected: false });
+
+        if (source.isDefault) {
+          options.push({ text: 'default', value: 'default', selected: false });
+        }
       }
 
       if (options.length === 0) {

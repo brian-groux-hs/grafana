@@ -21,7 +21,7 @@ import cx from 'classnames';
 import * as markers from './AccordianKeyValues.markers';
 import KeyValuesTable from './KeyValuesTable';
 import { TNil } from '../../types';
-import { TraceKeyValuePair, TraceLink } from '@grafana/data';
+import { TraceKeyValuePair, TraceLink } from '../../types/trace';
 import { autoColor, createStyle, Theme, useTheme } from '../../Theme';
 import { uAlignIcon, uTxEllipsis } from '../../uberUtilityStyles';
 
@@ -96,10 +96,12 @@ type AccordianKeyValuesProps = {
 // export for tests
 export function KeyValuesSummary(props: { data?: TraceKeyValuePair[] }) {
   const { data } = props;
+  const styles = getStyles(useTheme());
+
   if (!Array.isArray(data) || !data.length) {
     return null;
   }
-  const styles = getStyles(useTheme());
+
   return (
     <ul className={styles.summary}>
       {data.map((item, i) => (

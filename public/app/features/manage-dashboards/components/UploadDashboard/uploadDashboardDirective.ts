@@ -1,6 +1,6 @@
 import coreModule from 'app/core/core_module';
 import appEvents from 'app/core/app_events';
-import angular, { ILocationService } from 'angular';
+import angular from 'angular';
 import { AppEvents } from '@grafana/data';
 
 const template = `
@@ -11,7 +11,7 @@ const template = `
 `;
 
 /** @ngInject */
-export function uploadDashboardDirective(timer: any, $location: ILocationService) {
+export function uploadDashboardDirective() {
   return {
     restrict: 'E',
     template: template,
@@ -30,7 +30,7 @@ export function uploadDashboardDirective(timer: any, $location: ILocationService
             try {
               dash = JSON.parse(e.target.result);
             } catch (err) {
-              console.log(err);
+              console.error(err);
               appEvents.emit(AppEvents.alertError, [
                 'Import failed',
                 'JSON -> JS Serialization failed: ' + err.message,

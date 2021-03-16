@@ -1,3 +1,5 @@
+// +build integration
+
 package sqlstore
 
 import (
@@ -6,6 +8,7 @@ import (
 	"github.com/grafana/grafana/pkg/components/simplejson"
 	"github.com/grafana/grafana/pkg/services/dashboards"
 	"github.com/grafana/grafana/pkg/services/guardian"
+	"github.com/stretchr/testify/require"
 
 	"github.com/grafana/grafana/pkg/bus"
 	"github.com/grafana/grafana/pkg/models"
@@ -32,11 +35,11 @@ func TestIntegratedDashboardService(t *testing.T) {
 				return nil
 			})
 
-			savedFolder := saveTestFolder("Saved folder", testOrgId)
-			savedDashInFolder := saveTestDashboard("Saved dash in folder", testOrgId, savedFolder.Id)
-			saveTestDashboard("Other saved dash in folder", testOrgId, savedFolder.Id)
-			savedDashInGeneralFolder := saveTestDashboard("Saved dashboard in general folder", testOrgId, 0)
-			otherSavedFolder := saveTestFolder("Other saved folder", testOrgId)
+			savedFolder := saveTestFolder(t, "Saved folder", testOrgId)
+			savedDashInFolder := saveTestDashboard(t, "Saved dash in folder", testOrgId, savedFolder.Id)
+			saveTestDashboard(t, "Other saved dash in folder", testOrgId, savedFolder.Id)
+			savedDashInGeneralFolder := saveTestDashboard(t, "Saved dashboard in general folder", testOrgId, 0)
+			otherSavedFolder := saveTestFolder(t, "Other saved folder", testOrgId)
 
 			Convey("Should return dashboard model", func() {
 				So(savedFolder.Title, ShouldEqual, "Saved folder")
@@ -108,7 +111,7 @@ func TestIntegratedDashboardService(t *testing.T) {
 							Overwrite: false,
 						}
 
-						res := callSaveWithResult(cmd)
+						res := callSaveWithResult(t, cmd)
 
 						Convey("It should create a new dashboard in organization B", func() {
 							So(res, ShouldNotBeNil)
@@ -383,7 +386,7 @@ func TestIntegratedDashboardService(t *testing.T) {
 							Overwrite: shouldOverwrite,
 						}
 
-						res := callSaveWithResult(cmd)
+						res := callSaveWithResult(t, cmd)
 						So(res, ShouldNotBeNil)
 
 						Convey("It should create a new dashboard", func() {
@@ -407,7 +410,7 @@ func TestIntegratedDashboardService(t *testing.T) {
 							Overwrite: shouldOverwrite,
 						}
 
-						res := callSaveWithResult(cmd)
+						res := callSaveWithResult(t, cmd)
 						So(res, ShouldNotBeNil)
 
 						Convey("It should create a new dashboard", func() {
@@ -432,7 +435,7 @@ func TestIntegratedDashboardService(t *testing.T) {
 							Overwrite: shouldOverwrite,
 						}
 
-						res := callSaveWithResult(cmd)
+						res := callSaveWithResult(t, cmd)
 						So(res, ShouldNotBeNil)
 
 						Convey("It should create a new folder", func() {
@@ -457,7 +460,7 @@ func TestIntegratedDashboardService(t *testing.T) {
 							Overwrite: shouldOverwrite,
 						}
 
-						res := callSaveWithResult(cmd)
+						res := callSaveWithResult(t, cmd)
 						So(res, ShouldNotBeNil)
 
 						Convey("It should create a new dashboard", func() {
@@ -482,7 +485,7 @@ func TestIntegratedDashboardService(t *testing.T) {
 							Overwrite: shouldOverwrite,
 						}
 
-						res := callSaveWithResult(cmd)
+						res := callSaveWithResult(t, cmd)
 						So(res, ShouldNotBeNil)
 
 						Convey("It should create a new dashboard", func() {
@@ -543,7 +546,7 @@ func TestIntegratedDashboardService(t *testing.T) {
 							Overwrite: shouldOverwrite,
 						}
 
-						res := callSaveWithResult(cmd)
+						res := callSaveWithResult(t, cmd)
 						So(res, ShouldNotBeNil)
 
 						Convey("It should update dashboard", func() {
@@ -588,7 +591,7 @@ func TestIntegratedDashboardService(t *testing.T) {
 							Overwrite: shouldOverwrite,
 						}
 
-						res := callSaveWithResult(cmd)
+						res := callSaveWithResult(t, cmd)
 						So(res, ShouldNotBeNil)
 
 						Convey("It should update dashboard", func() {
@@ -674,7 +677,7 @@ func TestIntegratedDashboardService(t *testing.T) {
 							Overwrite: shouldOverwrite,
 						}
 
-						res := callSaveWithResult(cmd)
+						res := callSaveWithResult(t, cmd)
 						So(res, ShouldNotBeNil)
 
 						Convey("It should update dashboard", func() {
@@ -699,7 +702,7 @@ func TestIntegratedDashboardService(t *testing.T) {
 							Overwrite: shouldOverwrite,
 						}
 
-						res := callSaveWithResult(cmd)
+						res := callSaveWithResult(t, cmd)
 						So(res, ShouldNotBeNil)
 
 						Convey("It should update dashboard", func() {
@@ -724,7 +727,7 @@ func TestIntegratedDashboardService(t *testing.T) {
 							Overwrite: shouldOverwrite,
 						}
 
-						res := callSaveWithResult(cmd)
+						res := callSaveWithResult(t, cmd)
 
 						Convey("It should update dashboard", func() {
 							So(res, ShouldNotBeNil)
@@ -770,7 +773,7 @@ func TestIntegratedDashboardService(t *testing.T) {
 							Overwrite: shouldOverwrite,
 						}
 
-						res := callSaveWithResult(cmd)
+						res := callSaveWithResult(t, cmd)
 
 						Convey("It should overwrite existing dashboard", func() {
 							So(res, ShouldNotBeNil)
@@ -797,7 +800,7 @@ func TestIntegratedDashboardService(t *testing.T) {
 							Overwrite: shouldOverwrite,
 						}
 
-						res := callSaveWithResult(cmd)
+						res := callSaveWithResult(t, cmd)
 
 						Convey("It should overwrite existing dashboard", func() {
 							So(res, ShouldNotBeNil)
@@ -960,9 +963,13 @@ func permissionScenario(desc string, canSave bool, fn dashboardPermissionScenari
 	dashboardPermissionScenario(desc, mock, fn)
 }
 
-func callSaveWithResult(cmd models.SaveDashboardCommand) *models.Dashboard {
+func callSaveWithResult(t *testing.T, cmd models.SaveDashboardCommand) *models.Dashboard {
+	t.Helper()
+
 	dto := toSaveDashboardDto(cmd)
-	res, _ := dashboards.NewService().SaveDashboard(&dto, false)
+	res, err := dashboards.NewService().SaveDashboard(&dto, false)
+	require.NoError(t, err)
+
 	return res
 }
 
@@ -972,7 +979,9 @@ func callSaveWithError(cmd models.SaveDashboardCommand) error {
 	return err
 }
 
-func saveTestDashboard(title string, orgId int64, folderId int64) *models.Dashboard {
+func saveTestDashboard(t *testing.T, title string, orgId int64, folderId int64) *models.Dashboard {
+	t.Helper()
+
 	cmd := models.SaveDashboardCommand{
 		OrgId:    orgId,
 		FolderId: folderId,
@@ -993,12 +1002,13 @@ func saveTestDashboard(title string, orgId int64, folderId int64) *models.Dashbo
 	}
 
 	res, err := dashboards.NewService().SaveDashboard(&dto, false)
-	So(err, ShouldBeNil)
+	require.NoError(t, err)
 
 	return res
 }
 
-func saveTestFolder(title string, orgId int64) *models.Dashboard {
+func saveTestFolder(t *testing.T, title string, orgId int64) *models.Dashboard {
+	t.Helper()
 	cmd := models.SaveDashboardCommand{
 		OrgId:    orgId,
 		FolderId: 0,
@@ -1019,7 +1029,7 @@ func saveTestFolder(title string, orgId int64) *models.Dashboard {
 	}
 
 	res, err := dashboards.NewService().SaveDashboard(&dto, false)
-	So(err, ShouldBeNil)
+	require.NoError(t, err)
 
 	return res
 }
